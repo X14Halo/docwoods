@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doc Woods – Band Tools</title>
+<meta name="description" content="Tools for the band Doc Woods: songs, setlists, practice and drum grooves.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --board: #252a31;
+    --board-line: #2c323a;
+    --ink: #ece8e0;
+    --ink-soft: #a9adb3;
+    --metal: #c9ccd0;
+    --led-off: #4a2a2a;
+    --led-on: #ff4a3d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background-color: var(--board);
+    /* subtle pedalboard velcro texture */
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0 3px, var(--board-line) 3px 4px),
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.08) 3px 4px);
+    color: var(--ink);
+    font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 64px 16px 8px;
+    text-align: center;
+  }
+  h1 {
+    font-family: "Big Shoulders Display", Impact, sans-serif;
+    font-weight: 900;
+    font-size: clamp(64px, 14vw, 132px);
+    line-height: .9;
+    letter-spacing: .01em;
+    margin: 0;
+  }
+  .tagline {
+    margin: 14px auto 0;
+    max-width: 42ch;
+    color: var(--ink-soft);
+  }
+
+  main {
+    flex: 1;
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 16px 56px;
+  }
+  .board {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 32px;
+    justify-items: center;
+  }
+  .board li { width: 100%; max-width: 300px; display: flex; }
+
+  /* ---------- the pedal ---------- */
+  .pedal {
+    --text-on: #1d1d1d;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 400px;
+    padding: 22px 22px 26px;
+    border-radius: 14px;
+    background: var(--pedal);
+    color: var(--text-on);
+    text-decoration: none;
+    box-shadow:
+      inset 0 2px 0 rgba(255,255,255,.28),
+      inset 0 -6px 0 rgba(0,0,0,.18),
+      0 10px 0 -2px rgba(0,0,0,.35),
+      0 18px 30px rgba(0,0,0,.35);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .pedal.dark-text { --text-on: #1d1d1d; }
+  .pedal.light-text { --text-on: #f6f3ec; }
+
+  .knobs {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 10px;
+  }
+  .knob {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    opacity: .8;
+  }
+  .knob i {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #4a4a4a, #151515 70%);
+    box-shadow: 0 3px 4px rgba(0,0,0,.35);
+  }
+  .knob i::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 4px;
+    width: 3px;
+    height: 12px;
+    margin-left: -1.5px;
+    border-radius: 2px;
+    background: #f1f1f1;
+    transform-origin: 50% 15px;
+    transform: rotate(var(--turn, 0deg));
+  }
+
+  .led {
+    width: 12px;
+    height: 12px;
+    margin-top: 22px;
+    border-radius: 50%;
+    background: var(--led-off);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.5);
+    transition: background .12s ease, box-shadow .12s ease;
+  }
+
+  .name {
+    font-family: "Big Shoulders Display", Impact, sans-serif;
+    font-weight: 900;
+    font-size: 46px;
+    line-height: .95;
+    text-align: center;
+    margin: 18px 0 10px;
+  }
+  .what {
+    text-align: center;
+    font-size: 15.5px;
+    line-height: 1.4;
+    max-width: 24ch;
+    margin: 0;
+  }
+
+  .switch {
+    margin-top: auto;
+    padding-top: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .switch i {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #f4f5f6, var(--metal) 45%, #7e8287 100%);
+    box-shadow:
+      0 0 0 6px rgba(0,0,0,.18),
+      0 5px 0 #5d6166,
+      0 7px 10px rgba(0,0,0,.4);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .switch span {
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  /* stomp: the pedal reacts when you hover, focus or press it */
+  .pedal:hover .led,
+  .pedal:focus-visible .led {
+    background: var(--led-on);
+    box-shadow: 0 0 6px 2px rgba(255,74,61,.7), 0 0 18px 4px rgba(255,74,61,.35);
+  }
+  .pedal:active { transform: translateY(3px); }
+  .pedal:active .switch i {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 6px rgba(0,0,0,.18), 0 1px 0 #5d6166, 0 2px 4px rgba(0,0,0,.4);
+  }
+  .pedal:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 6px;
+  }
+
+  footer {
+    text-align: center;
+    padding: 0 16px 32px;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 420px) {
+    header { padding-top: 44px; }
+    .pedal { min-height: 380px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pedal, .switch i, .led { transition: none; }
+    .pedal:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Doc Woods</h1>
+  <p class="tagline">Everything the band uses, in one place. Tap a pedal to open it.</p>
+</header>
+
+<main>
+  <ul class="board">
+
+    <!--
+      ======== HOW TO ADD A NEW TOOL ========
+      Copy one whole <li> ... </li> block below, paste it at the end of the list,
+      then change:
+        href="..."          the link to the tool
+        --pedal: #......    the pedal's color
+        dark-text / light-text   pick whichever reads better on that color
+        the two knob labels, the name, and the one-line description
+      --turn sets where each knob points (any angle from -140deg to 140deg).
+    -->
+
+    <li>
+      <a class="pedal dark-text" style="--pedal:#e3b23c" href="https://kanband.gelletto.com/">
+        <div class="knobs" aria-hidden="true">
+          <span class="knob"><i style="--turn:-60deg"></i>songs</span>
+          <span class="knob"><i style="--turn:45deg"></i>sets</span>
+        </div>
+        <span class="led" aria-hidden="true"></span>
+        <span class="name">Kanband</span>
+        <p class="what">Our song list, recordings, notes, setlists and practice routines.</p>
+        <span class="switch"><i aria-hidden="true"></i><span>Open</span></span>
+      </a>
+    </li>
+
+    <li>
+      <a class="pedal light-text" style="--pedal:#2c8a7e" href="https://x14halo.github.io/pocket-drummer/">
+        <div class="knobs" aria-hidden="true">
+          <span class="knob"><i style="--turn:20deg"></i>tempo</span>
+          <span class="knob"><i style="--turn:-35deg"></i>groove</span>
+        </div>
+        <span class="led" aria-hidden="true"></span>
+        <span class="name">Pocket Drummer</span>
+        <p class="what">Drum grooves to practice with. Pick a style, set the tempo, play along.</p>
+        <span class="switch"><i aria-hidden="true"></i><span>Open</span></span>
+      </a>
+    </li>
+
+  </ul>
+</main>
+
+<footer>Doc Woods</footer>
+
+</body>
+</html>
