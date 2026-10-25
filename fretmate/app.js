@@ -1,4 +1,4 @@
-/* Changes — minimal chord progression builder (light pads) with key setting and suggestions. Built on core.js */
+/* Fretmate — minimal chord progression builder (light pads) with key setting and suggestions. Built on core.js */
 (function () {
 'use strict';
 const C = window.Changes;
@@ -924,7 +924,7 @@ function mount(host) {
   const songName = () => (curSong() ? curSong().name : null);
   const songNameEl = el('span', { class: 'songbtn-name' });
   const songBtn = el('button', { class: 'songbtn', onclick: () => openSongs() }, [
-    el('span', { class: 'songbtn-txt' }, [el('span', { class: 'songbtn-app', text: 'CHANGES' }), songNameEl]),
+    el('span', { class: 'songbtn-txt' }, [el('span', { class: 'songbtn-app', text: 'FRETMATE' }), songNameEl]),
     el('span', { class: 'key-chev', html: ICON_CHEV }),
   ]);
   songSlot.append(songBtn);
@@ -974,7 +974,7 @@ function mount(host) {
       body.append(el('div', { class: 'sh-sec' }, [
         el('div', { class: 'sh-label', text: 'This song' }),
         el('div', { class: 'save-row' }, [input, saveBtn]),
-        cur ? el('div', { class: 'saved-note' }, [el('b', { text: '✓' }), 'Saved. Changes save automatically.']) : el('p', { class: 'note', text: 'Give it a name to keep it. After that, every change saves automatically.' }),
+        cur ? el('div', { class: 'saved-note' }, [el('b', { text: '✓' }), 'Saved. Your edits save automatically.']) : el('p', { class: 'note', text: 'Give it a name to keep it. After that, every change saves automatically.' }),
       ]));
       body.append(el('div', { class: 'sh-sec' }, [
         el('button', { class: 'rowbtn', onclick: () => { currentId = null; persistSongs(); store.loadSong({ sections: [{ name: 'Verse', chords: [] }] }); drawSongBtn(); undoToast('Started a new song'); S.close(); } },
