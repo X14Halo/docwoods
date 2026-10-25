@@ -1472,7 +1472,6 @@ function mount(host) {
     m.recent.push(sigOf(list)); if (m.recent.length > 10) m.recent.shift();
     store.load(list);
     m.lastSig = sigOf(store.state.chords);
-    playList(list);
     undoToast('New ' + (vibe !== 'any' ? VIBES[vibe].name.toLowerCase() + ' ' : '') + sec.name.toLowerCase() + ' idea');
   }
   let playTimers = [];
@@ -1501,10 +1500,9 @@ function mount(host) {
     const nsNotes = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } });
     const rollIcon = el('span', { class: 'dice', html: ICON_DICE });
     const rollMini = el('button', { class: 'ns-roll', 'aria-label': 'Roll another idea', onclick: () => gen(true) }, [rollIcon, 'Roll']);
-    const hearBtn = el('button', { class: 'ns-hear', 'aria-label': 'Hear it', html: ICON.play, onclick: () => playList(list) });
     body.append(el('div', { class: 'sh-sec' }, [
       el('div', { class: 'sh-label', text: 'Suggestion' }),
-      el('div', { class: 'ns-card' }, [el('div', { class: 'ns-top' }, [desc, el('div', { class: 'ns-btns' }, [hearBtn, rollMini])]), chips, nsNotes]),
+      el('div', { class: 'ns-card' }, [el('div', { class: 'ns-top' }, [desc, el('div', { class: 'ns-btns' }, [rollMini])]), chips, nsNotes]),
     ]));
     body.append(el('div', { class: 'ns-actions' }, [
       el('button', { class: 'rowbtn', onclick: () => { store.addSection(type, []); S.close(); } }, ['Start empty']),
@@ -1531,7 +1529,6 @@ function mount(host) {
       nsNotes.textContent = '';
       listNotes(list, key).forEach(t => nsNotes.append(el('div', { class: 'ns-note' }, [el('span', { class: 'info-dot', 'aria-hidden': 'true', text: '\u266d' }), t])));
       if (spin && !ui.reduceMotion()) rollIcon.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 460, easing: ui.EASE });
-      if (spin) playList(list);
     }
     drawTypes(); gen(false);
   }
