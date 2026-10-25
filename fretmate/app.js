@@ -1475,10 +1475,7 @@ function mount(host) {
     undoToast('New ' + (vibe !== 'any' ? VIBES[vibe].name.toLowerCase() + ' ' : '') + sec.name.toLowerCase() + ' idea');
   }
   let playTimers = [];
-  function playList(list) {
-    playTimers.forEach(clearTimeout); playTimers = [];
-    list.slice(0, 8).forEach((c, i) => playTimers.push(setTimeout(() => audio.strum(c, null, { vel: 0.85, ring: 1.2 }), i * 640)));
-  }
+
 
   /* ── new section sheet ── */
   function openNewSection() {
