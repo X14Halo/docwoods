@@ -336,7 +336,7 @@ function loadState() {
       if (s && Array.isArray(s.sections) && s.sections.length) {
         const sections = s.sections.map(x => mkSection(x.name || 'Verse', clean(x.chords)));
         const ci = Math.max(0, Math.min(sections.length - 1, s.curIndex || 0));
-        return { sections, cur: sections[ci].id, lock: s.lock || null, bpm: s.bpm || 96, design: s.design || null };
+        return { sections, cur: sections[ci].id, lock: s.lock || null, bpm: s.bpm || 96, design: s.design || null, capo: s.capo || 0 };
       }
       if (s && Array.isArray(s.chords)) {
         const sec = mkSection('Verse', clean(s.chords));
@@ -345,7 +345,7 @@ function loadState() {
     }
   } catch (e) { /* storage unavailable */ }
   const sec = mkSection('Verse', PRESETS[0].list.map(withId));
-  return { sections: [sec], cur: sec.id, lock: null, bpm: 96, design: null };
+  return { sections: [sec], cur: sec.id, lock: null, bpm: 96, design: null, capo: 0 };
 }
 
 const store = (function () {
@@ -355,13 +355,13 @@ const store = (function () {
   const subs = new Set();
   const history = [];
   const curSec = () => song.sections.find(x => x.id === song.cur) || song.sections[0];
-  function view() { const c = curSec(); state = { chords: c.chords, sections: song.sections, cur: c.id, section: c, lock: song.lock, bpm: song.bpm, design: song.design }; }
+  function view() { const c = curSec(); state = { chords: c.chords, sections: song.sections, cur: c.id, section: c, lock: song.lock, bpm: song.bpm, design: song.design, capo: song.capo || 0 }; }
   function put(arr) { song = { ...song, sections: song.sections.map(x => (x.id === song.cur ? { ...x, chords: arr } : x)) }; }
   function save() {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
         sections: song.sections.map(x => ({ name: x.name, chords: x.chords.map(({ id, ...c }) => c) })),
-        curIndex: song.sections.findIndex(x => x.id === song.cur), lock: song.lock, bpm: song.bpm, design: song.design,
+        curIndex: song.sections.findIndex(x => x.id === song.cur), lock: song.lock, bpm: song.bpm, design: song.design, capo: song.capo || 0,
       }));
     } catch (e) { /* ignore */ }
   }
@@ -387,7 +387,7 @@ const store = (function () {
     };
   }
   function emit(change) { view(); save(); compute(); subs.forEach(fn => { try { fn(state, analysis, change || {}); } catch (e) { console.error(e); } }); }
-  function snap() { history.push(JSON.stringify({ sections: song.sections, cur: song.cur, lock: song.lock })); if (history.length > 60) history.shift(); }
+  function snap() { history.push(JSON.stringify({ sections: song.sections, cur: song.cur, lock: song.lock, capo: song.capo || 0 })); if (history.length > 60) history.shift(); }
   view(); compute();
   return {
     get state() { return state; },
@@ -477,16 +477,40 @@ const store = (function () {
       song = { ...song, sections: arr, cur };
       emit({ type: 'section', id: cur, dir: -1 });
     },
+    /* capo: chords are stored as the shapes you finger; the capo raises how they sound.
+       keepSound = true re-writes the shapes so the song keeps sounding the same. */
+    setCapo(n, keepSound) {
+      n = Math.max(0, Math.min(11, n | 0));
+      const old = song.capo || 0;
+      if (n === old) return;
+      snap();
+      let sections = song.sections, lock = song.lock;
+      if (keepSound) {
+        const d = n - old;
+        const shift = c => ({ ...c, root: mod(c.root - d), bass: c.bass == null ? null : mod(c.bass - d) });
+        sections = sections.map(x => ({ ...x, chords: x.chords.map(shift) }));
+        if (lock) lock = { tonic: mod(lock.tonic - d), mode: lock.mode };
+        const all = [].concat(...sections.map(x => x.chords));
+        const det = lock || (detectKey(all) || {}).best;
+        if (det) {
+          const names = scaleNotes(det), ivs = scaleIntervals(det).map(i => mod(det.tonic + i));
+          const accOf = pc => { const i = ivs.indexOf(pc); const nm = i >= 0 ? names[i] : ''; return nm.includes('♭') ? 'b' : nm.includes('♯') ? '#' : keyAcc(det); };
+          sections = sections.map(x => ({ ...x, chords: x.chords.map(c => ({ ...c, acc: accOf(c.root), bassAcc: c.bass == null ? accOf(c.root) : accOf(c.bass), v: 0 })) }));
+        }
+      }
+      song = { ...song, sections, lock, capo: n };
+      emit({ type: 'capo', keepSound: !!keepSound });
+    },
     setLock(key) { snap(); song = { ...song, lock: key ? { tonic: key.tonic, mode: key.mode } : null }; emit({ type: 'lock' }); },
     /* whole songs */
     getSong() {
-      return { sections: song.sections.map(x => ({ name: x.name, chords: x.chords.map(({ id, ...c }) => c) })), lock: song.lock, cur: song.sections.findIndex(x => x.id === song.cur) };
+      return { sections: song.sections.map(x => ({ name: x.name, chords: x.chords.map(({ id, ...c }) => c) })), lock: song.lock, cur: song.sections.findIndex(x => x.id === song.cur), capo: song.capo || 0 };
     },
     loadSong(data) {
       snap();
       const secs = (data && data.sections && data.sections.length ? data.sections : [{ name: 'Verse', chords: [] }]).map(x => mkSection(x.name || 'Verse', (x.chords || []).filter(c => c && Q[c.q]).map(withId)));
       const ci = Math.max(0, Math.min(secs.length - 1, (data && data.cur) || 0));
-      song = { ...song, sections: secs, cur: secs[ci].id, lock: (data && data.lock) || null };
+      song = { ...song, sections: secs, cur: secs[ci].id, lock: (data && data.lock) || null, capo: (data && data.capo) || 0 };
       emit({ type: 'song' });
     },
     setBpm(bpm) { song = { ...song, bpm: Math.max(40, Math.min(220, Math.round(bpm))) }; emit({ type: 'bpm' }); },
@@ -495,7 +519,7 @@ const store = (function () {
     undo() {
       const raw = history.pop(); if (!raw) return false;
       const o = JSON.parse(raw);
-      song = { ...song, sections: o.sections, cur: o.cur, lock: o.lock };
+      song = { ...song, sections: o.sections, cur: o.cur, lock: o.lock, capo: o.capo || 0 };
       emit({ type: 'undo' });
       return true;
     },

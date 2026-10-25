@@ -306,6 +306,30 @@ const CSS = `
 .app .hv-txt { display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.45; margin: 0; }
 .app .hv-txt p { margin: 0; } .app .hv-sub { color: var(--muted); }
 
+.app .capobtn { flex: none; align-self: center; margin-right: 8px; min-width: 50px; height: 44px; border-radius: 12px; border: 1px solid var(--line) !important; background: #FFFFFF !important; color: var(--muted) !important; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 8px !important; font: inherit; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+.app .capobtn-l { font-family: 'Chakra Petch', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+.app .capobtn-n { font-family: 'Chakra Petch', sans-serif; font-size: 15px; font-weight: 700; line-height: 1; }
+.app .capobtn.on { background: color-mix(in srgb, var(--accent) 12%, #FFFFFF) !important; color: #2E44B8 !important; border-color: color-mix(in srgb, var(--accent) 40%, transparent) !important; }
+.app .key-stack { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; min-width: 0; }
+.app .key-stack .key-name { margin-left: 0; }
+.app .key-sound { font-size: 13px; font-weight: 600; color: #2E44B8; white-space: nowrap; }
+.app .keybar.has-capo { height: 66px; }
+.app .keybar.has-capo .keybtn { height: 64px; }
+.app .pad-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.app .pad-sound { font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.app.capo-on:not(.frets-on) .pad { padding: 10px 6px 40px; }
+.app.capo-on:not(.frets-on) .pad-play { width: 32px; height: 32px; right: 5px; bottom: 5px; }
+.app.capo-on:not(.frets-on) .pad-play svg { width: 13px; height: 13px; }
+.app.capo-on .pad-sound { font-size: 12.5px; }
+.app.capo-on:not(.frets-on) .pad-tag { bottom: 12px; }
+@media (max-width: 400px) { .app .keybar.has-capo .key-rel { display: none; } .app .capobtn { min-width: 46px; margin-right: 6px; } }
+@media (max-width: 420px) { .app .keybar.has-capo .key-main { font-size: 21px; } }
+.app.frets-on .pad-sound { display: none; }
+.app .fb-capo { fill: #3A3D44; }
+.app .fb-capo-t { font-size: 10px; font-weight: 700; letter-spacing: .1em; fill: #3A3D44; }
+.app .fb-dim { fill: #F1F2F5; opacity: .85; }
+.app .capo-ic { width: 22px; height: 22px; border-radius: 6px; background: var(--ink); color: #FFFFFF; font: 700 12px/22px 'Chakra Petch', sans-serif; text-align: center; }
+
 /* sheets */
 .app .pk-rn, .app .pk-notes { display: none; }
 .app .sh-sec { display: flex; flex-direction: column; gap: 8px; }
@@ -432,18 +456,32 @@ function changeTips(a, b) {
   return ['No fingers stay in place. Picture the ' + nb + ' shape and put all ' + fb.length + ' fingers down together. Practice this change slowly.'];
 }
 /* a capo position that turns barre chords into easy open shapes */
+/* how hard a chord is to play: fingers used, plus big penalties for barres and high positions */
+function shapeCost(ch) {
+  const vs = Guitar.voicings(ch); if (!vs.length) return 20;
+  const ei = Guitar.easyIndex(ch), v = ei >= 0 ? vs[ei] : vs[0];
+  const fr = v.frets.filter(f => f > 0);
+  return fr.length + (v.barre ? 6 : 0) + (Math.max(0, ...fr) > 5 ? 2 : 0) + (ei >= 0 ? 0 : 2);
+}
+/* a capo position that makes the chords genuinely easier: fewer hard chords, no easy chord turns hard, clearly less effort */
 function capoPlan(chords) {
   if (!chords.length || !window.Guitar) return null;
-  const hardN = chords.filter(c => !Guitar.isEasy(c)).length;
-  if (!hardN) return null;
+  const easy0 = chords.map(c => Guitar.isEasy(c));
+  const hard0 = easy0.filter(e => !e).length;
+  if (!hard0) return null;
+  const cost0 = chords.reduce((a, c) => a + shapeCost(c), 0);
   let best = null;
-  for (let k = 1; k <= 7; k++) {
+  for (let k = 1; k <= 5; k++) {
     const shapes = chords.map(c => { const r = T.mod(c.root - k); const acc = [1, 3, 8, 10].includes(r) ? (r === 1 || r === 8 ? '#' : 'b') : '#'; return { root: r, acc, q: c.q, bass: c.bass == null ? null : T.mod(c.bass - k), bassAcc: acc, v: 0 }; });
-    const easy = shapes.filter(x => Guitar.isEasy(x)).length;
-    if (!best || easy > best.easy) best = { capo: k, shapes, easy, total: chords.length };
-    if (easy === chords.length) break;
+    const easyK = shapes.map(x => Guitar.isEasy(x));
+    if (easyK.some((e, i) => easy0[i] && !e)) continue;                 // an easy chord would get harder
+    const hardK = easyK.filter(e => !e).length;
+    if (hardK >= hard0) continue;                                         // must remove at least one hard chord
+    const cost = shapes.reduce((a, c) => a + shapeCost(c), 0);
+    if (cost > cost0 * 0.75) continue;                                    // and be clearly less work overall
+    if (!best || hardK < best.hard || (hardK === best.hard && cost < best.cost)) best = { capo: k, shapes, hard: hardK, cost, easy: chords.length - hardK, total: chords.length };
   }
-  return best && best.easy > chords.length - hardN ? best : null;
+  return best;
 }
 const EASY_KEYS = [[7, 'major'], [0, 'major'], [2, 'major'], [9, 'major'], [4, 'major'], [4, 'minor'], [9, 'minor'], [2, 'minor']];
 
@@ -819,7 +857,8 @@ function mount(host) {
   const undoToast = msg => ui.toast(root, msg, { action: 'Undo', onAction: () => store.undo() });
 
   /* guitar fingerings */
-  audio.setVoicer(ch => { const v = window.Guitar && Guitar.voicing(ch); return v ? v.midi : null; });
+  const capoNow = () => store.state.capo || 0;
+  audio.setVoicer(ch => { const v = window.Guitar && Guitar.voicing(ch); return v ? v.midi.map(m => m + capoNow()) : null; });
   let showFrets = false;
   try { showFrets = localStorage.getItem('changes.frets') === '1'; } catch (e) { /* ignore */ }
   const fretBtn = el('button', { class: 'ic fretbtn', html: ICON_FRETS, onclick: () => {
@@ -856,15 +895,17 @@ function mount(host) {
   ]);
 
   /* key button */
+  const keySoundSlot = el('span', { class: 'key-sound-slot' });
   const keyName = el('span', { class: 'key-name', 'aria-live': 'polite' });
   const keyLabel = el('span', { class: 'key-label' });
-  const keyBtn = el('button', { class: 'keybtn', onclick: () => openKeySheet() }, [keyLabel, keyName, el('span', { class: 'key-chev', html: ICON_CHEV })]);
+  const keyBtn = el('button', { class: 'keybtn', onclick: () => openKeySheet() }, [keyLabel, el('span', { class: 'key-stack' }, [keyName, keySoundSlot]), el('span', { class: 'key-chev', html: ICON_CHEV })]);
   const lockBtn = el('button', { class: 'lockbtn', html: ICON_LOCK, onclick: () => {
     const an = store.analysis;
     if (an.locked) { store.setLock(null); ui.toast(root, 'Key unlocked · it follows your chords'); }
     else if (an.key) { store.setLock(an.key); ui.toast(root, 'Key locked to ' + T.keyName(an.key)); }
   } });
-  const keyBar = el('div', { class: 'keybar' }, [lockBtn, keyBtn]);
+  const capoBtn = el('button', { class: 'capobtn', onclick: () => openCapoSetting() }, [el('span', { class: 'capobtn-l', text: 'CAPO' }), el('span', { class: 'capobtn-n' })]);
+  const keyBar = el('div', { class: 'keybar' }, [lockBtn, keyBtn, capoBtn]);
 
   /* pads */
   const grid = el('div', { class: 'grid' });
@@ -1024,6 +1065,7 @@ function mount(host) {
     S.sheet.append(el('div', { class: 'pk-head' }, [el('button', { class: 'pk-cancel', text: 'Close', onclick: () => S.close() }), el('div', { class: 'pk-title', text: 'Options' }), el('span', { class: 'pk-spacer' })]), body);
     body.append(
       switchRow('Easy chords', 'Prefer open chords in ideas, tag barre chords and suggest a capo.', () => easyMode, setEasy),
+      el('button', { class: 'rowbtn', onclick: () => { S.close(); setTimeout(openCapoSetting, 200); } }, [el('span', { class: 'capo-ic', text: 'C' }), capoNow() ? 'Capo: fret ' + capoNow() : 'Capo: none']),
       el('button', { class: 'rowbtn', onclick: () => { S.close(); setTimeout(() => ui.presets(root, { onPick: p => undoToast('Loaded ' + p.name) }), 200); } }, [el('span', { html: ICON.book, style: { display: 'flex' } }), 'Example progressions']),
       el('button', { class: 'rowbtn danger', disabled: !store.state.chords.length, onclick: () => { store.clear(); undoToast('Cleared'); S.close(); } }, [el('span', { html: ICON.trash, style: { display: 'flex' } }), 'Clear this section']),
     );
@@ -1053,7 +1095,20 @@ function mount(host) {
   let shownKey = null, scrambleTimer = 0;
   const keyMain = el('span', { class: 'key-main' });
   const keyRel = el('span', { class: 'key-rel' });
+  const keySound = el('span', { class: 'key-sound' });
+  keySoundSlot.append(keySound);
+  function drawCapo(key) {
+    const k = capoNow();
+    capoBtn.classList.toggle('on', k > 0);
+    capoBtn.querySelector('.capobtn-n').textContent = k ? String(k) : 'off';
+    capoBtn.setAttribute('aria-label', k ? 'Capo on fret ' + k + '. Change capo.' : 'No capo. Set a capo.');
+    keySound.textContent = k && key ? 'capo ' + k + ' · sounds in ' + T.keyName({ tonic: T.mod(key.tonic + k), mode: key.mode }) : '';
+    keySound.hidden = !(k && key);
+    keyBar.classList.toggle('has-capo', !!(k && key));
+    root.classList.toggle('capo-on', k > 0);
+  }
   function setKey(key, locked) {
+    drawCapo(key);
     keyLabel.textContent = 'KEY';
     keyBtn.setAttribute('aria-label', (key ? 'Key ' + T.keyName(key) : 'No key yet') + '. Tap to choose a key.');
     lockBtn.classList.toggle('on', !!locked);
@@ -1091,6 +1146,7 @@ function mount(host) {
     const x = el('button', { class: 'pad-x', 'data-nodrag': '', html: ICON.close, onclick: e => { e.stopPropagation(); removeWithUndo(c.id); } });
     const gd = el('span', { class: 'pad-gd', 'aria-hidden': 'true' });
     const tag = el('span', { class: 'pad-tag', 'aria-hidden': 'true', text: 'BARRE' });
+    const snd = el('span', { class: 'pad-sound', 'aria-hidden': 'true' });
     const play = el('button', { class: 'pad-play', 'data-nodrag': '', html: ICON.play, onclick: e => {
       e.stopPropagation();
       const ch = store.find(pad.dataset.id); if (!ch) return;
@@ -1098,8 +1154,8 @@ function mount(host) {
       flash(pad);
       if (!ui.reduceMotion()) play.animate([{ transform: 'scale(1)' }, { transform: 'scale(.82)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }], { duration: 300, easing: ui.EASE });
     } });
-    const pad = el('button', { class: 'pad', 'data-id': c.id }, [flag, info, name, gd, tag, play, x]);
-    pad._play = play;
+    const pad = el('button', { class: 'pad', 'data-id': c.id }, [flag, info, el('span', { class: 'pad-mid' }, [name, snd]), gd, tag, play, x]);
+    pad._play = play; pad._snd = snd;
     pad._name = name; pad._x = x; pad._flag = flag; pad._gd = gd;
     pad.addEventListener('click', () => {
       const ch = store.find(pad.dataset.id); if (!ch) return;
@@ -1110,11 +1166,13 @@ function mount(host) {
   function flash(pad) { pad.classList.remove('flash'); void pad.offsetWidth; pad.classList.add('flash'); }
   function updatePad(pad, c, a) {
     const name = T.chordName(c);
+    const size = Math.round(nameSize(name) * (capoNow() ? 0.8 : 1));
     if (pad._name.textContent !== name) {
       const had = pad._name.textContent;
-      pad._name.textContent = name; pad._name.style.fontSize = nameSize(name) + 'px';
+      pad._name.textContent = name;
       if (had && pad.isConnected) flash(pad);
     }
+    if (pad._sz !== size) { pad._sz = size; pad._name.style.fontSize = size + 'px'; }
     pad.className = pad.className.replace(/\bfn-\S+/g, '').trim() + ' fn-' + (a ? a.fn : 'outside');
     const key = store.analysis.key;
     const off = isOffC(c, key, a), color = !off && isColorC(c, key, a);
@@ -1127,6 +1185,10 @@ function mount(host) {
     pad.setAttribute('aria-label', name + (off ? ', does not fit the key' : color ? ', borrowed chord' : '') + ', tap to change');
     pad._x.setAttribute('aria-label', 'Remove ' + name);
     pad._play.setAttribute('aria-label', 'Play ' + name);
+    const k = capoNow();
+    pad._snd.textContent = k ? 'sounds ' + T.noteName(T.mod(c.root + k), T.keyAcc(store.analysis.key ? { tonic: T.mod(store.analysis.key.tonic + k), mode: store.analysis.key.mode } : { tonic: 0, mode: 'major' })) + T.Q[c.q].sym : '';
+    pad._snd.hidden = !k;
+    if (k) pad.setAttribute('aria-label', pad.getAttribute('aria-label').replace(', tap to change', ', sounds ' + pad._snd.textContent.replace('sounds ', '') + ' with capo ' + k + ', tap to change'));
     const hard = easyMode && !Guitar.isEasy(c);
     pad.classList.toggle('hard', hard);
     if (hard) pad.setAttribute('aria-label', pad.getAttribute('aria-label').replace(', tap to change', ', barre chord, tap to change'));
@@ -1193,7 +1255,7 @@ function mount(host) {
     if (!isEmpty && empty.isConnected) empty.remove();
 
     // capo suggestion
-    const plan = easyMode ? capoPlan(state.chords) : null;
+    const plan = easyMode && !capoNow() ? capoPlan(state.chords) : null;
     capoBox.hidden = !plan;
     if (plan) {
       const key = plan.capo + ':' + plan.shapes.map(T.chordName).join(' ');
@@ -1303,7 +1365,8 @@ function mount(host) {
     }
     box._dia.innerHTML = Guitar.diagram(v, { fingers: true });
     box._tab.textContent = v ? Guitar.tab(v) : '—';
-    box._pos.textContent = !v ? 'No playable shape' : (vs.length > 1 ? 'Shape ' + (i + 1) + ' of ' + vs.length + ' · ' : '') + posText(v);
+    box._pos.textContent = !v ? 'No playable shape' : (vs.length > 1 ? 'Shape ' + (i + 1) + ' of ' + vs.length + ' · ' : '') + posText(v)
+      + (capoNow() ? ' · frets count from your capo (fret ' + capoNow() + '). Sounds like ' + T.noteName(T.mod(spec.root + capoNow()), spec.acc) + T.Q[spec.q].sym + '.' : '');
     box._prev.disabled = box._next.disabled = vs.length < 2;
     box._prev.onclick = () => setV((i - 1 + vs.length) % vs.length);
     box._next.onclick = () => setV((i + 1) % vs.length);
@@ -1358,6 +1421,30 @@ function mount(host) {
     ])));
   }
 
+  /* ── capo setting ── */
+  function openCapoSetting() {
+    const S = ui.sheet(root, { label: 'Capo' });
+    const body = el('div', { class: 'pk-body' });
+    S.sheet.append(el('div', { class: 'pk-head' }, [el('button', { class: 'pk-cancel', text: 'Close', onclick: () => S.close() }), el('div', { class: 'pk-title', text: 'Capo' }), el('span', { class: 'pk-spacer' })]), body);
+    let keepSound = false;
+    const grid3 = el('div', { class: 'tonics' });
+    const draw = () => {
+      grid3.textContent = '';
+      for (let f = 0; f <= 9; f++) grid3.append(el('button', { class: capoNow() === f ? 'on' : '', text: f ? String(f) : 'None', 'aria-label': f ? 'Capo on fret ' + f : 'No capo', onclick: () => {
+        const was = capoNow(); if (f === was) { S.close(); return; }
+        store.setCapo(f, keepSound);
+        undoToast(f ? 'Capo on fret ' + f + (keepSound ? ', same sound' : '') : 'Capo off');
+        S.close();
+      } }));
+    };
+    draw();
+    body.append(
+      el('p', { class: 'note', text: 'Got a capo on? Pick the fret. Your chords show the shapes you play, and the key bar shows how the song really sounds. Chord sounds and the solo fretboard follow the capo too.' }),
+      el('div', { class: 'sh-sec' }, [el('div', { class: 'sh-label', text: 'Capo on fret' }), grid3]),
+      switchRow('Keep how the song sounds', 'Change the chord shapes instead, so the song stays in the same key.', () => keepSound, v => { keepSound = v; }),
+    );
+  }
+
   /* ── capo sheet ── */
   function openCapo(plan) {
     const S = ui.sheet(root, { label: 'Capo' });
@@ -1376,6 +1463,8 @@ function mount(host) {
       ]));
     });
     body.append(grid2);
+    body.append(el('button', { class: 'rowbtn primary', onclick: () => { store.setCapo(plan.capo, true); undoToast('Capo on fret ' + plan.capo + '. Chords now show the shapes to play'); S.close(); } }, ['Use capo on fret ' + plan.capo]));
+    body.append(el('p', { class: 'note', text: 'Your chords will switch to these shapes and keep sounding exactly the same.' }));
   }
 
   /* ── solo guide: which notes to play over the progression ── */
@@ -1385,9 +1474,11 @@ function mount(host) {
     const body = el('div', { class: 'pk-body' });
     S.sheet.append(el('div', { class: 'pk-head' }, [el('button', { class: 'pk-cancel', text: 'Close', onclick: () => S.close() }), el('div', { class: 'pk-title', text: 'Solo' }), el('span', { class: 'pk-spacer' })]), body);
     if (!key) { body.append(el('p', { class: 'note', text: 'Add a few chords first, then come back to see which notes to solo with.' })); return; }
-    const minor = key.mode === 'minor', t = key.tonic, acc = T.keyAcc(key);
+    const CAPO = capoNow();
+    const skey = { tonic: T.mod(key.tonic + CAPO), mode: key.mode };           // how it really sounds
+    const minor = skey.mode === 'minor', t = skey.tonic, acc = T.keyAcc(skey);
     const bluesy = /Blues/.test(an.flavor || '') || store.state.chords.filter(c => T.Q[c.q].iv.some(([x]) => x === 10) && T.Q[c.q].iv.some(([x]) => x === 4)).length >= 2;
-    const tn = T.keyTonicName(key);
+    const tn = T.keyTonicName(skey);
     const SC = {
       pent: { label: 'Easy 5-note', iv: minor ? [0, 3, 5, 7, 10] : [0, 2, 4, 7, 9], blue: [] },
       blues: { label: 'Bluesy', iv: [0, 3, 5, 7, 10], blue: [6] },
@@ -1395,7 +1486,7 @@ function mount(host) {
     };
     // mode flavors: same home note, one "color" note changed — offered only when every note of the chords fits
     const absPcs = new Set();
-    store.state.chords.forEach(c => T.Q[c.q].iv.filter(([x]) => x < 12).forEach(([x]) => absPcs.add(T.mod(c.root + x))));
+    store.state.chords.forEach(c => T.Q[c.q].iv.filter(([x]) => x < 12).forEach(([x]) => absPcs.add(T.mod(c.root + CAPO + x))));
     const relTo = t0 => new Set([...absPcs].map(p => T.mod(p - t0)));
     const rel = relTo(t);
     const FLAV = [
@@ -1410,11 +1501,12 @@ function mount(host) {
     // home notes to try: the key's tonic, plus the first chord when the song clearly "sits" on it (e.g. an Am–D vamp)
     const homes = [{ t, minor, tn, label: null }];
     const ch0 = store.state.chords[0];
-    if (ch0 && ch0.root !== t) {
+    if (ch0 && T.mod(ch0.root + CAPO) !== t) {
       const q0 = T.Q[ch0.q], m0 = q0.iv.some(([x]) => x === 3) && !q0.iv.some(([x]) => x === 4);
       const list = store.state.chords;
       const sits = list[list.length - 1].root === ch0.root || list.filter(c => c.root === ch0.root).length >= 2 || list.length <= 2;
-      if (sits) homes.unshift({ t: ch0.root, minor: m0, tn: T.rootName(ch0), label: 'Centered on ' + T.chordName({ ...ch0, bass: null }) });
+      const r0 = T.mod(ch0.root + CAPO), n0 = T.noteName(r0, acc);
+      if (sits) homes.unshift({ t: r0, minor: m0, tn: n0, label: 'Centered on ' + n0 + T.Q[ch0.q].sym });
     }
     const flavors = [];
     homes.forEach(h => {
@@ -1434,7 +1526,8 @@ function mount(host) {
       let d = T.mod(pc - NAT[li]); if (d > 6) d -= 12;
       return T.LETTERS[li] + (d === 1 ? '♯' : d === -1 ? '♭' : d === 2 ? 'x' : d === -2 ? '♭♭' : '');
     };
-    const colorChord = f => store.state.chords.find(c => T.Q[c.q].iv.some(([x]) => x < 12 && T.mod(c.root + x - f.t) === f.color));
+    const colorChord = f => store.state.chords.find(c => T.Q[c.q].iv.some(([x]) => x < 12 && T.mod(c.root + CAPO + x - f.t) === f.color));
+    const soundName = c => T.noteName(T.mod(c.root + CAPO), acc) + T.Q[c.q].sym;
     let mode = !minor && bluesy ? 'blues' : 'pent';
     const seg = el('div', { class: 'modes three' });
     const flavRow = el('div', { class: 'flav-row' });
@@ -1452,7 +1545,7 @@ function mount(host) {
     ]), tips);
     const TUN = [64, 59, 55, 50, 45, 40]; // high E on top, like tab
     const SNAMES = ['e', 'B', 'G', 'D', 'A', 'E'];
-    const FRETS = 15, FW = 54, X0 = 58, Y0 = 20, SH = 32;
+    const FW = 54, X0 = 58, Y0 = 20, SH = 32;
     const fx = f => (f === 0 ? X0 - 19 : X0 + (f - 0.5) * FW);
     function draw() {
       const sc = SC[mode];
@@ -1463,16 +1556,17 @@ function mount(host) {
         el('span', { class: 'flav-name' }, [f.tn + ' ' + f.name, f.best ? el('span', { class: 'flav-best', text: 'Best match' }) : null]), el('span', { class: 'flav-vibe', text: f.vibe + (f.center ? ' · ' + f.center.replace('Centered', 'centered') : '') }),
       ])));
       const fl = sc.flavor || null;
-      const t = fl ? fl.t : key.tonic, tn = fl ? fl.tn : T.keyTonicName(key), minor = fl ? !fl.major : key.mode === 'minor';
+      const t = fl ? fl.t : skey.tonic, tn = fl ? fl.tn : T.keyTonicName(skey), minor = fl ? !fl.major : skey.mode === 'minor';
       const majPentAsMinor = !minor && (mode === 'pent' || !!fl);
       const relMinor = T.mod(t + 9);
-      const name = fl ? tn + ' ' + fl.name : mode === 'blues' ? tn + ' blues scale' : mode === 'full' ? tn + ' ' + key.mode + ' scale' : tn + ' ' + (minor ? 'minor' : 'major') + ' pentatonic';
+      const name = fl ? tn + ' ' + fl.name : mode === 'blues' ? tn + ' blues scale' : mode === 'full' ? tn + ' ' + skey.mode + ' scale' : tn + ' ' + (minor ? 'minor' : 'major') + ' pentatonic';
       head.textContent = '';
       head.append(el('div', { class: 'solo-name', text: name }), el('div', { class: 'solo-sub', text: fl ? fl.vibe + '. It’s ' + fl.how + (fl.center ? ', with ' + fl.tn + ' as home' : '') + '.' : mode === 'pent' ? 'The easiest scale to solo with. Almost every note sounds good over your chords.' : mode === 'blues' ? 'The 5-note scale plus one gritty “blue” note.' : 'All seven notes of the key, for more melodic lines.' }));
       // box 1: the minor-pentatonic shape rooted on the low E string
       const boxRoot = majPentAsMinor ? relMinor : t;
-      let b = T.mod(boxRoot - 4);
+      let b = CAPO + T.mod(boxRoot - 4 - CAPO);                                // first box at or above the capo
       const band = [b, b + 3];
+      const FRETS = Math.max(15, b + 4);
       const pcs = new Map();
       sc.iv.forEach(x => pcs.set(T.mod(t + x), x === 0 ? 'root' : 'pent'));
       sc.blue.forEach(x => pcs.set(T.mod(t + x), 'blue'));
@@ -1480,13 +1574,19 @@ function mount(host) {
       if (fl) { const p5 = (minor ? [0, 3, 5, 7, 10] : [0, 2, 4, 7, 9]).map(x => T.mod(t + x)); sc.iv.forEach(x => { const pc = T.mod(t + x); if (x === fl.color) pcs.set(pc, 'flavor'); else if (x !== 0 && !p5.includes(pc)) pcs.set(pc, 'extra'); }); }
       const W = X0 + FRETS * FW + 12, H = Y0 + 5 * SH + 40;
       let g = `<svg class="fb" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Fretboard showing ${name}">`;
-      g += `<rect x="${X0 + (Math.max(band[0], 0.5) - 0.5 - (band[0] === 0 ? 0.3 : 0)) * FW - (band[0] === 0 ? 16 : 0)}" y="${Y0 - 14}" width="${(band[1] - Math.max(band[0], 0.5) + 1) * FW + (band[0] === 0 ? 30 : 0)}" height="${5 * SH + 28}" rx="12" class="fb-band"/>`;
+      const bx = band[0] === 0 ? X0 - 38 : X0 + (band[0] - 1) * FW + 3, bw = band[0] === 0 ? 38 + 3 * FW - 3 : 4 * FW - 6;
+      g += `<rect x="${bx}" y="${Y0 - 14}" width="${bw}" height="${5 * SH + 28}" rx="12" class="fb-band"/>`;
       for (let f = 0; f <= FRETS; f++) g += `<line x1="${X0 + f * FW}" x2="${X0 + f * FW}" y1="${Y0}" y2="${Y0 + 5 * SH}" class="${f === 0 ? 'fb-nut' : 'fb-fret'}"/>`;
       for (let s2 = 0; s2 < 6; s2++) g += `<line x1="${X0}" x2="${X0 + FRETS * FW}" y1="${Y0 + s2 * SH}" y2="${Y0 + s2 * SH}" class="fb-str" stroke-width="${0.8 + s2 * 0.3}"/><text x="6" y="${Y0 + s2 * SH + 4}" class="fb-sn">${SNAMES[s2]}</text>`;
-      [3, 5, 7, 9, 12, 15].forEach(f => g += `<text x="${X0 + (f - 0.5) * FW}" y="${Y0 + 5 * SH + 26}" text-anchor="middle" class="fb-fn">${f}</text>`);
+      [3, 5, 7, 9, 12, 15].filter(f => f !== CAPO).forEach(f => g += `<text x="${X0 + (f - 0.5) * FW}" y="${Y0 + 5 * SH + 26}" text-anchor="middle" class="fb-fn">${f}</text>`);
       [3, 5, 7, 9, 15].forEach(f => g += `<circle cx="${X0 + (f - 0.5) * FW}" cy="${Y0 + 2.5 * SH}" r="4" class="fb-inlay"/>`);
       g += `<circle cx="${X0 + 11.5 * FW}" cy="${Y0 + 1.5 * SH}" r="4" class="fb-inlay"/><circle cx="${X0 + 11.5 * FW}" cy="${Y0 + 3.5 * SH}" r="4" class="fb-inlay"/>`;
-      for (let s2 = 0; s2 < 6; s2++) for (let f = 0; f <= FRETS; f++) {
+      if (CAPO) {
+        g += `<rect x="${X0}" y="${Y0 - 10}" width="${(CAPO - 1) * FW + 12}" height="${5 * SH + 20}" class="fb-dim"/>`;
+        g += `<rect x="${X0 + (CAPO - 0.5) * FW - 9}" y="${Y0 - 12}" width="18" height="${5 * SH + 24}" rx="7" class="fb-capo"/>`;
+        g += `<text x="${X0 + (CAPO - 0.5) * FW}" y="${Y0 + 5 * SH + 26}" text-anchor="middle" class="fb-capo-t">CAPO</text>`;
+      }
+      for (let s2 = 0; s2 < 6; s2++) for (let f = CAPO; f <= FRETS; f++) {
         const m = TUN[s2] + f, pc = T.mod(m), kind = pcs.get(pc);
         if (!kind) continue;
         const nm = kind === 'flavor' ? flavorName(fl) : T.noteName(pc, kind === 'blue' ? 'b' : acc);
@@ -1501,7 +1601,8 @@ function mount(host) {
       if (!ui.reduceMotion()) wrap.querySelectorAll('.fb-n').forEach((n, i) => n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: Math.min(i * 4, 300), fill: 'backwards' }));
       tips.textContent = '';
       const tip = x => tips.append(el('li', { text: x }));
-      tip('Easiest place to start: the highlighted box at fret' + (b === 0 ? 's 0–3 (open position)' : 's ' + b + '–' + (b + 3)) + '.');
+      tip('Easiest place to start: the highlighted box at fret' + (b === 0 ? 's 0–3 (open position)' : b === CAPO ? 's ' + b + '–' + (b + 3) + ', right at your capo' : 's ' + b + '–' + (b + 3)) + '.');
+      if (CAPO) tip('Your capo is on fret ' + CAPO + '. These are real fret numbers and real note names, so they match what the bass and keys play.');
       tip('Blue dots are ' + tn + ', home base. Ending a phrase there sounds resolved.');
       if (majPentAsMinor) tip(tn + ' major pentatonic uses the same notes as ' + T.noteName(relMinor, acc) + ' minor pentatonic. The box starts on ' + T.noteName(relMinor, acc) + ', but think of ' + tn + ' as home.');
       if (mode === 'blues') tip('The orange blue note adds grit. Slide or bend through it rather than resting on it.');
@@ -1511,7 +1612,7 @@ function mount(host) {
         const cn = flavorName(fl);
         tip('The purple ' + cn + ' is the flavor note. Play the easy 5-note scale and add ' + cn + ' now and then. That one note gives the ' + fl.name + ' sound.');
         const cc = colorChord(fl);
-        if (cc) tip(cn + ' sounds especially good over your ' + T.chordName(cc) + ' chord, which has that note in it.');
+        if (cc) tip(cn + ' sounds especially good over your ' + (CAPO ? soundName(cc) + ' (' + T.chordName(cc) + ' shape)' : T.chordName(cc)) + ' chord, which has that note in it.');
         else tip('Your chords don’t use ' + cn + ', so it adds new color. Let it pass quickly and land on a blue home note.');
       }
       if (!fl && store.state.chords.some(c => { const a = an.items[c.id]; return a && !a.inKey; })) tip('Over chords outside the key, aim for that chord’s own notes. Tap a chord to see its notes.');
