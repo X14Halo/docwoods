@@ -236,6 +236,16 @@ const CSS = `
 .app .fb-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .app .lg { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .app .lg.root { background: var(--accent); } .app .lg.pent { background: var(--ink); } .app .lg.extra { border: 1.5px solid var(--ink); } .app .lg.blue { background: #E58A00; }
+.app .flav-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.app .flav { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 9px 14px; border-radius: 14px; border: 1.5px solid var(--line); background: #FFFFFF; color: var(--ink); font: inherit; cursor: pointer; transition: border-color .15s, background .15s, transform .12s; }
+.app .flav:active { transform: scale(.97); }
+.app .flav.on { border-color: #8E3FC7; background: #F7F0FC; }
+.app .flav-name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.app .flav-best { font-size: 12px; font-weight: 700; color: #FFFFFF; background: #12A266; border-radius: 999px; padding: 2px 8px; }
+.app .flav-vibe { font-size: 14px; color: var(--muted); }
+.app .fb-n.flavor circle { fill: #8E3FC7; } .app .fb-n.flavor text { fill: #FFFFFF; }
+.app .lg.lg-fl { background: #8E3FC7; }
+.app .fb-wrap { flex: none; }
 .app .solo-tips { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.45; color: var(--ink); }
 
 .app .pad-play { position: absolute !important; right: 6px; bottom: 6px; width: 38px; height: 38px; border-radius: 50% !important; display: flex; align-items: center; justify-content: center;
@@ -1383,14 +1393,62 @@ function mount(host) {
       blues: { label: 'Bluesy', iv: [0, 3, 5, 7, 10], blue: [6] },
       full: { label: 'Full scale', iv: minor ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11], blue: [] },
     };
+    // mode flavors: same home note, one "color" note changed — offered only when every note of the chords fits
+    const absPcs = new Set();
+    store.state.chords.forEach(c => T.Q[c.q].iv.filter(([x]) => x < 12).forEach(([x]) => absPcs.add(T.mod(c.root + x))));
+    const relTo = t0 => new Set([...absPcs].map(p => T.mod(p - t0)));
+    const rel = relTo(t);
+    const FLAV = [
+      { id: 'mixo', name: 'Mixolydian', major: true, iv: [0, 2, 4, 5, 7, 9, 10], color: 10, vibe: 'Bluesy rock and country', how: 'the major scale with a lower 7th' },
+      { id: 'lyd', name: 'Lydian', major: true, iv: [0, 2, 4, 6, 7, 9, 11], color: 6, vibe: 'Dreamy and floating', how: 'the major scale with a raised 4th' },
+      { id: 'dor', name: 'Dorian', major: false, iv: [0, 2, 3, 5, 7, 9, 10], color: 9, vibe: 'Smooth, soulful, a little funky', how: 'the minor scale with a brighter 6th' },
+      { id: 'phr', name: 'Phrygian', major: false, iv: [0, 1, 3, 5, 7, 8, 10], color: 1, vibe: 'Dark and Spanish, great for heavy riffs', how: 'the minor scale with a darker 2nd' },
+      { id: 'harm', name: 'Harmonic minor', major: false, iv: [0, 2, 3, 5, 7, 8, 11], color: 11, vibe: 'Dramatic and exotic', how: 'the minor scale with a raised 7th' },
+    ];
+    const fullIv = SC.full.iv;
+    const fullFits = [...rel].every(x => fullIv.includes(x));
+    // home notes to try: the key's tonic, plus the first chord when the song clearly "sits" on it (e.g. an Am–D vamp)
+    const homes = [{ t, minor, tn, label: null }];
+    const ch0 = store.state.chords[0];
+    if (ch0 && ch0.root !== t) {
+      const q0 = T.Q[ch0.q], m0 = q0.iv.some(([x]) => x === 3) && !q0.iv.some(([x]) => x === 4);
+      const list = store.state.chords;
+      const sits = list[list.length - 1].root === ch0.root || list.filter(c => c.root === ch0.root).length >= 2 || list.length <= 2;
+      if (sits) homes.unshift({ t: ch0.root, minor: m0, tn: T.rootName(ch0), label: 'Centered on ' + T.chordName({ ...ch0, bass: null }) });
+    }
+    const flavors = [];
+    homes.forEach(h => {
+      const r = relTo(h.t);
+      FLAV.forEach(f => {
+        if (f.major !== !h.minor || ![...r].every(x => f.iv.includes(x)) || (f.id === 'harm' && !r.has(11))) return;
+        if (flavors.some(x => x.id === f.id)) return;
+        flavors.push({ ...f, t: h.t, tn: h.tn, center: h.label, best: r.has(f.color) });
+      });
+    });
+    flavors.sort((a, b) => b.best - a.best);
+    flavors.forEach(f => { SC['f:' + f.id] = { label: f.name, iv: f.iv, blue: [], flavor: f }; });
+    // spell the flavor note from the scale degree (e.g. F♯ Dorian's 6th is D♯, A Mixolydian's 7th is G)
+    const flavorName = f => {
+      const deg = f.iv.indexOf(f.color), NAT = [0, 2, 4, 5, 7, 9, 11];
+      const li = (T.LETTERS.indexOf(f.tn[0]) + deg) % 7, pc = T.mod(f.t + f.color);
+      let d = T.mod(pc - NAT[li]); if (d > 6) d -= 12;
+      return T.LETTERS[li] + (d === 1 ? '♯' : d === -1 ? '♭' : d === 2 ? 'x' : d === -2 ? '♭♭' : '');
+    };
+    const colorChord = f => store.state.chords.find(c => T.Q[c.q].iv.some(([x]) => x < 12 && T.mod(c.root + x - f.t) === f.color));
     let mode = !minor && bluesy ? 'blues' : 'pent';
     const seg = el('div', { class: 'modes three' });
+    const flavRow = el('div', { class: 'flav-row' });
+    const flavSec = el('div', { class: 'sh-sec' }, [
+      el('div', { class: 'pk-label' }, [el('span', { text: 'Try a flavor' }), el('span', { class: 'pk-hint', text: flavors.length ? 'modes that fit your chords' : '' })]),
+      flavors.length ? flavRow : el('p', { class: 'note', text: 'No other flavors fit these chords cleanly, so the scales above are your best match.' }),
+    ]);
     const head = el('div', { class: 'solo-head' });
     const wrap = el('div', { class: 'fb-wrap' });
     const tips = el('ul', { class: 'solo-tips' });
-    body.append(head, seg, wrap, el('div', { class: 'fb-legend' }, [
+    body.append(head, seg, flavSec, wrap, el('div', { class: 'fb-legend' }, [
       el('span', {}, [el('i', { class: 'lg root' }), 'Root (home)']), el('span', {}, [el('i', { class: 'lg pent' }), 'Scale note']),
       el('span', { class: 'lg-full' }, [el('i', { class: 'lg extra' }), 'Extra scale note']), el('span', { class: 'lg-blue' }, [el('i', { class: 'lg blue' }), 'Blue note']),
+      el('span', { class: 'lg-flav' }, [el('i', { class: 'lg lg-fl' }), 'Flavor note']),
     ]), tips);
     const TUN = [64, 59, 55, 50, 45, 40]; // high E on top, like tab
     const SNAMES = ['e', 'B', 'G', 'D', 'A', 'E'];
@@ -1400,11 +1458,17 @@ function mount(host) {
       const sc = SC[mode];
       seg.textContent = '';
       ['pent', 'blues', 'full'].forEach(m => seg.append(el('button', { class: m === mode ? 'on' : '', text: SC[m].label, onclick: () => { mode = m; draw(); } })));
-      const majPentAsMinor = !minor && mode === 'pent';
+      flavRow.textContent = '';
+      flavors.forEach(f => flavRow.append(el('button', { class: 'flav' + (mode === 'f:' + f.id ? ' on' : ''), onclick: () => { mode = mode === 'f:' + f.id ? 'pent' : 'f:' + f.id; draw(); } }, [
+        el('span', { class: 'flav-name' }, [f.tn + ' ' + f.name, f.best ? el('span', { class: 'flav-best', text: 'Best match' }) : null]), el('span', { class: 'flav-vibe', text: f.vibe + (f.center ? ' · ' + f.center.replace('Centered', 'centered') : '') }),
+      ])));
+      const fl = sc.flavor || null;
+      const t = fl ? fl.t : key.tonic, tn = fl ? fl.tn : T.keyTonicName(key), minor = fl ? !fl.major : key.mode === 'minor';
+      const majPentAsMinor = !minor && (mode === 'pent' || !!fl);
       const relMinor = T.mod(t + 9);
-      const name = mode === 'blues' ? tn + ' blues scale' : mode === 'full' ? tn + ' ' + key.mode + ' scale' : tn + ' ' + (minor ? 'minor' : 'major') + ' pentatonic';
+      const name = fl ? tn + ' ' + fl.name : mode === 'blues' ? tn + ' blues scale' : mode === 'full' ? tn + ' ' + key.mode + ' scale' : tn + ' ' + (minor ? 'minor' : 'major') + ' pentatonic';
       head.textContent = '';
-      head.append(el('div', { class: 'solo-name', text: name }), el('div', { class: 'solo-sub', text: mode === 'pent' ? 'The easiest scale to solo with. Almost every note sounds good over your chords.' : mode === 'blues' ? 'The 5-note scale plus one gritty “blue” note.' : 'All seven notes of the key, for more melodic lines.' }));
+      head.append(el('div', { class: 'solo-name', text: name }), el('div', { class: 'solo-sub', text: fl ? fl.vibe + '. It’s ' + fl.how + (fl.center ? ', with ' + fl.tn + ' as home' : '') + '.' : mode === 'pent' ? 'The easiest scale to solo with. Almost every note sounds good over your chords.' : mode === 'blues' ? 'The 5-note scale plus one gritty “blue” note.' : 'All seven notes of the key, for more melodic lines.' }));
       // box 1: the minor-pentatonic shape rooted on the low E string
       const boxRoot = majPentAsMinor ? relMinor : t;
       let b = T.mod(boxRoot - 4);
@@ -1413,6 +1477,7 @@ function mount(host) {
       sc.iv.forEach(x => pcs.set(T.mod(t + x), x === 0 ? 'root' : 'pent'));
       sc.blue.forEach(x => pcs.set(T.mod(t + x), 'blue'));
       if (mode === 'full') { const p5 = (minor ? [0, 3, 5, 7, 10] : [0, 2, 4, 7, 9]).map(x => T.mod(t + x)); sc.iv.forEach(x => { const pc = T.mod(t + x); if (!p5.includes(pc)) pcs.set(pc, 'extra'); }); }
+      if (fl) { const p5 = (minor ? [0, 3, 5, 7, 10] : [0, 2, 4, 7, 9]).map(x => T.mod(t + x)); sc.iv.forEach(x => { const pc = T.mod(t + x); if (x === fl.color) pcs.set(pc, 'flavor'); else if (x !== 0 && !p5.includes(pc)) pcs.set(pc, 'extra'); }); }
       const W = X0 + FRETS * FW + 12, H = Y0 + 5 * SH + 40;
       let g = `<svg class="fb" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Fretboard showing ${name}">`;
       g += `<rect x="${X0 + (Math.max(band[0], 0.5) - 0.5 - (band[0] === 0 ? 0.3 : 0)) * FW - (band[0] === 0 ? 16 : 0)}" y="${Y0 - 14}" width="${(band[1] - Math.max(band[0], 0.5) + 1) * FW + (band[0] === 0 ? 30 : 0)}" height="${5 * SH + 28}" rx="12" class="fb-band"/>`;
@@ -1424,13 +1489,14 @@ function mount(host) {
       for (let s2 = 0; s2 < 6; s2++) for (let f = 0; f <= FRETS; f++) {
         const m = TUN[s2] + f, pc = T.mod(m), kind = pcs.get(pc);
         if (!kind) continue;
-        const nm = T.noteName(pc, kind === 'blue' ? 'b' : acc);
+        const nm = kind === 'flavor' ? flavorName(fl) : T.noteName(pc, kind === 'blue' ? 'b' : acc);
         g += `<g class="fb-n ${kind}" data-m="${m}"><circle cx="${fx(f)}" cy="${Y0 + s2 * SH}" r="13.5"/><text x="${fx(f)}" y="${Y0 + s2 * SH + 4.5}" text-anchor="middle">${nm}</text></g>`;
       }
       g += '</svg>';
       wrap.innerHTML = g;
-      body.querySelector('.lg-full').hidden = mode !== 'full';
+      body.querySelector('.lg-full').hidden = !(mode === 'full' || fl);
       body.querySelector('.lg-blue').hidden = mode !== 'blues';
+      body.querySelector('.lg-flav').hidden = !fl;
       requestAnimationFrame(() => { wrap.scrollLeft = Math.max(0, X0 + (Math.max(band[0], 0) - 1) * FW - 10); });
       if (!ui.reduceMotion()) wrap.querySelectorAll('.fb-n').forEach((n, i) => n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: Math.min(i * 4, 300), fill: 'backwards' }));
       tips.textContent = '';
@@ -1440,7 +1506,15 @@ function mount(host) {
       if (majPentAsMinor) tip(tn + ' major pentatonic uses the same notes as ' + T.noteName(relMinor, acc) + ' minor pentatonic. The box starts on ' + T.noteName(relMinor, acc) + ', but think of ' + tn + ' as home.');
       if (mode === 'blues') tip('The orange blue note adds grit. Slide or bend through it rather than resting on it.');
       if (mode === 'full') tip('Outlined notes complete the full scale. Use them as passing notes between the pentatonic ones.');
-      if (store.state.chords.some(c => { const a = an.items[c.id]; return a && !a.inKey; })) tip('Over chords outside the key, aim for that chord’s own notes. Tap a chord to see its notes.');
+      if (mode === 'full' && !fullFits) tip('Some of your chords use notes outside this scale. Check the flavors above for a better match.');
+      if (fl) {
+        const cn = flavorName(fl);
+        tip('The purple ' + cn + ' is the flavor note. Play the easy 5-note scale and add ' + cn + ' now and then. That one note gives the ' + fl.name + ' sound.');
+        const cc = colorChord(fl);
+        if (cc) tip(cn + ' sounds especially good over your ' + T.chordName(cc) + ' chord, which has that note in it.');
+        else tip('Your chords don’t use ' + cn + ', so it adds new color. Let it pass quickly and land on a blue home note.');
+      }
+      if (!fl && store.state.chords.some(c => { const a = an.items[c.id]; return a && !a.inKey; })) tip('Over chords outside the key, aim for that chord’s own notes. Tap a chord to see its notes.');
     }
     wrap.addEventListener('click', e => { const n = e.target.closest('.fb-n'); if (!n) return; audio.note(+n.dataset.m); n.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 220, easing: ui.EASE }); });
     draw();
