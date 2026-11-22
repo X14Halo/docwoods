@@ -166,7 +166,7 @@
   .player {
     position: relative;
     isolation: isolate;
-    height: 340px;
+    height: 411px;
     margin-top: calc(var(--u) * 28);
     background: var(--tan);
     border-radius: calc(var(--u) * 6);
@@ -295,7 +295,7 @@
 
     .listen { margin-top: 14px; padding: 0; }
     .listen-head, .frame { display: none; }
-    .player { margin-top: 0; height: 130px; border-radius: 6px; }
+    .player { margin-top: 0; height: 467px; border-radius: 6px; }
     .btn { height: 52px; margin-top: 14px; border-radius: 5px; font-size: clamp(25px, 8.2vw, 36px); }
 
     .shows { padding: 0; }
@@ -387,7 +387,7 @@
         <!--
           Bandcamp player: Silver Getaway. To swap in a different album, change
           data-album to its numeric album ID and data-tracks to its number of
-          tracks (up to 5 show at once on desktop; the rest scroll).
+          tracks (phones list every track; desktop shows 5 and scrolls the rest).
         -->
         <iframe id="bc-player" data-album="3053449480" data-tracks="8"
                 title="Bandcamp player" loading="lazy" seamless></iframe>
@@ -436,8 +436,8 @@
 </div>
 
 <script>
-  // Bandcamp player: tracklist on desktop, compact on phones. Laid out at a
-  // fixed 320px (see the .player CSS) and scaled to the panel's width.
+  // Bandcamp player with its tracklist. Laid out at a fixed 320px (see the
+  // .player CSS) and scaled to the panel's width.
   (function () {
     var f = document.getElementById('bc-player');
     if (!f) return;
@@ -447,12 +447,12 @@
     // the rust color once multiplied into the tan panel.
     var base = 'https://bandcamp.com/EmbeddedPlayer/album=' + f.dataset.album +
                '/size=large/bgcol=ffffff/linkcol=b96f2a/';
-    var rows = Math.min(parseInt(f.dataset.tracks, 10) || 5, 5);  // more than 5 scroll
+    var tracks = parseInt(f.dataset.tracks, 10) || 5;
     var mq = window.matchMedia('(max-width: 900px)');
     function update() {
-      var compact = mq.matches;
-      var src = base + (compact ? 'tracklist=false' : 'tracklist=true') + '/artwork=small/transparent=true/';
-      var h = compact ? 120 : 168 + 33 * rows;
+      var rows = mq.matches ? Math.min(tracks, 15) : Math.min(tracks, 5);
+      var src = base + 'tracklist=true/artwork=small/transparent=true/';
+      var h = 168 + 33 * rows;
       var s = panel.clientWidth / W;
       f.style.height = h + 'px';
       f.style.transform = 'scale(' + s + ')';
