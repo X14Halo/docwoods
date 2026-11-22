@@ -125,10 +125,11 @@
     margin: calc(var(--u) * 12) 0 0;
     font: 500 calc(var(--u) * 34) / 1.2 var(--body);
   }
+  /* The logo file is padded so its circle's center is the image center. */
   .logo-pic {
     display: block;
-    width: calc(var(--u) * 502);
-    margin: calc(var(--u) * 46) 0 0 calc(var(--u) * -12);
+    width: calc(var(--u) * 548);
+    margin: calc(var(--u) * 46) 0 calc(var(--u) * -23) calc(var(--u) * -46.5);
   }
   .logo { width: 100%; }
 
@@ -243,7 +244,7 @@
     .main { display: block; text-align: center; }
     .intro { align-items: center; }
     .city { order: 1; margin-top: 6px; font-size: clamp(38px, 12.4vw, 62px); }
-    .logo-pic { order: 2; width: 60%; max-width: 310px; margin: 14px auto 0; }
+    .logo-pic { order: 2; width: 65.5%; max-width: 338px; margin: 14px auto -9px; }
     .tagline { order: 3; margin-top: 16px; font-size: clamp(17px, 5.6vw, 25px); }
 
     .listen { margin-top: 14px; padding: 0; }
@@ -318,7 +319,7 @@
       <p class="tagline">Just some animals making noise.</p>
       <picture class="logo-pic">
         <source type="image/webp" srcset="img/doc-woods-logo.webp">
-        <img class="logo" src="img/doc-woods-logo.png" width="1000" height="917" alt="Doc Woods band illustration: three skeleton animals playing two acoustic guitars and drums">
+        <img class="logo" src="img/doc-woods-logo.png" width="1091" height="962" alt="Doc Woods band illustration: three skeleton animals playing two acoustic guitars and drums">
       </picture>
     </section>
 
