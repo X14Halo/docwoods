@@ -159,14 +159,42 @@
   .frame-r { right: 0; top: calc(var(--u) * 24); bottom: calc(var(--u) * -8); width: calc(var(--u) * 6); background-image: url(img/rule-thin-v.svg); transform: scaleX(-1); }
   .frame-b { left: calc(var(--u) * -3); right: calc(var(--u) * 4); bottom: 0; height: calc(var(--u) * 6); background-image: url(img/rule-thin.svg); transform: scaleX(-1); }
 
+  /*
+    Bandcamp player. It is always laid out at 320px wide (Bandcamp's narrow
+    layout, where its logo and the download/share links sit in their own row
+    at the bottom instead of colliding at the top), then scaled to fit the
+    panel. Its white background is multiplied into the tan panel.
+  */
   .player {
+    position: relative;
+    isolation: isolate;
+    height: 340px;
     margin-top: calc(var(--u) * 28);
     background: var(--tan);
     border-radius: calc(var(--u) * 6);
     overflow: hidden;
-    box-shadow: 0 1px 0 rgba(38, 51, 51, .12), inset 0 0 0 1px rgba(38, 51, 51, .07);
+    box-shadow: 0 1px 0 rgba(38, 51, 51, .14), 0 0 0 1px rgba(38, 51, 51, .1);
   }
-  .player iframe { display: block; width: 100%; height: 307px; border: 0; }
+  .player iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 320px;
+    border: 0;
+    transform-origin: 0 0;
+    mix-blend-mode: multiply;
+  }
+  .player::after { /* soft print grain over the player, clicks pass through */
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .17 .5 0 0 0 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: .45;
+    mix-blend-mode: multiply;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(38, 51, 51, .1);
+  }
 
   .btn {
     position: relative;
@@ -249,8 +277,7 @@
 
     .listen { margin-top: 14px; padding: 0; }
     .listen-head, .frame { display: none; }
-    .player { margin-top: 0; border-radius: 6px; }
-    .player iframe { height: 120px; }
+    .player { margin-top: 0; height: 130px; border-radius: 6px; }
     .btn { height: 52px; margin-top: 14px; border-radius: 5px; font-size: clamp(25px, 8.2vw, 36px); }
 
     .shows { padding: 0; }
@@ -340,8 +367,8 @@
         -->
         <iframe id="bc-player" data-album="1031605262" data-tracks="5"
                 title="Bandcamp player" loading="lazy" seamless></iframe>
-        <noscript><iframe style="border:0;width:100%;height:307px" title="Bandcamp player"
-                src="https://bandcamp.com/EmbeddedPlayer/album=1031605262/size=large/bgcol=ffffff/linkcol=9c561c/artwork=small/tracklist=true/transparent=true/" seamless></iframe></noscript>
+        <noscript><iframe style="border:0;width:100%;height:340px;transform:none" title="Bandcamp player"
+                src="https://bandcamp.com/EmbeddedPlayer/album=1031605262/size=large/bgcol=ffffff/linkcol=b96f2a/tracklist=true/artwork=small/transparent=true/" seamless></iframe></noscript>
       </div>
       <a class="btn" href="https://docwoods.bandcamp.com/">Listen on Bandcamp</a>
     </section>
@@ -384,20 +411,32 @@
 </div>
 
 <script>
-  // Bandcamp player: full tracklist on desktop, compact on phones.
+  // Bandcamp player: tracklist on desktop, compact on phones. Laid out at a
+  // fixed 320px (see the .player CSS) and scaled to the panel's width.
   (function () {
     var f = document.getElementById('bc-player');
     if (!f) return;
+    var panel = f.parentNode;
+    var W = 320;
+    // linkcol is set a little lighter than the site's rust so it lands on
+    // the rust color once multiplied into the tan panel.
     var base = 'https://bandcamp.com/EmbeddedPlayer/album=' + f.dataset.album +
-               '/size=large/bgcol=ffffff/linkcol=9c561c/';
-    var tracks = Math.min(parseInt(f.dataset.tracks, 10) || 5, 8);
+               '/size=large/bgcol=ffffff/linkcol=b96f2a/';
+    var tracks = Math.min(parseInt(f.dataset.tracks, 10) || 5, 10);
     var mq = window.matchMedia('(max-width: 900px)');
     function update() {
-      var src = base + (mq.matches ? 'tracklist=false' : 'tracklist=true') + '/artwork=small/transparent=true/';
-      f.style.height = mq.matches ? '120px' : (142 + 33 * tracks) + 'px';
+      var compact = mq.matches;
+      var src = base + (compact ? 'tracklist=false' : 'tracklist=true') + '/artwork=small/transparent=true/';
+      var h = compact ? 120 : 168 + 33 * tracks;
+      var s = panel.clientWidth / W;
+      f.style.height = h + 'px';
+      f.style.transform = 'scale(' + s + ')';
+      panel.style.height = Math.round(h * s) + 'px';
       if (f.getAttribute('src') !== src) f.setAttribute('src', src);
     }
     update();
+    if (window.ResizeObserver) new ResizeObserver(update).observe(panel);
+    else window.addEventListener('resize', update);
     if (mq.addEventListener) mq.addEventListener('change', update); else mq.addListener(update);
   })();
 
