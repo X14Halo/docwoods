@@ -161,17 +161,22 @@
     Bandcamp player. It is always laid out at 320px wide (Bandcamp's narrow
     layout, where its logo and the download/share links sit in their own row
     at the bottom instead of colliding at the top), then scaled to fit the
-    panel. Its white background is multiplied into the tan panel.
+    panel. Bandcamp's light player is flipped into a dark slate card: invert +
+    hue-rotate turns white into black and keeps colors' hues, then "screen"
+    lets the slate panel show through where the player was white.
   */
   .player {
     position: relative;
     isolation: isolate;
     height: 411px;
     margin-top: calc(var(--u) * 28);
-    background: var(--tan);
-    border-radius: calc(var(--u) * 6);
+    background: linear-gradient(180deg, #2d3c3c 0%, #263333 45%, #223030 100%);
+    border-radius: calc(var(--u) * 9);
     overflow: hidden;
-    box-shadow: 0 1px 0 rgba(38, 51, 51, .14), 0 0 0 1px rgba(38, 51, 51, .1);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, .5),
+      0 14px 26px -14px rgba(20, 32, 32, .6),
+      0 3px 8px -3px rgba(20, 32, 32, .25);
   }
   .player iframe {
     position: absolute;
@@ -180,18 +185,16 @@
     width: 320px;
     border: 0;
     transform-origin: 0 0;
-    mix-blend-mode: multiply;
+    filter: invert(1) hue-rotate(180deg);
+    mix-blend-mode: screen;
   }
-  .player::after { /* soft print grain over the player, clicks pass through */
+  .player::after { /* soft inner edge */
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .17 .5 0 0 0 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    opacity: .45;
-    mix-blend-mode: multiply;
     border-radius: inherit;
-    box-shadow: inset 0 0 0 1px rgba(38, 51, 51, .1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), inset 0 0 0 1px rgba(255, 255, 255, .05);
   }
 
   .btn {
@@ -295,7 +298,7 @@
 
     .listen { margin-top: 14px; padding: 0; }
     .listen-head, .frame { display: none; }
-    .player { margin-top: 0; height: 467px; border-radius: 6px; }
+    .player { margin-top: 0; height: 467px; border-radius: 9px; }
     .btn { height: 52px; margin-top: 14px; border-radius: 5px; font-size: clamp(25px, 8.2vw, 36px); }
 
     .shows { padding: 0; }
@@ -392,7 +395,7 @@
         <iframe id="bc-player" data-album="3053449480" data-tracks="8"
                 title="Bandcamp player" loading="lazy" seamless></iframe>
         <noscript><iframe style="border:0;width:100%;height:340px;transform:none" title="Bandcamp player"
-                src="https://bandcamp.com/EmbeddedPlayer/album=3053449480/size=large/bgcol=ffffff/linkcol=b96f2a/tracklist=true/artwork=small/transparent=true/" seamless></iframe></noscript>
+                src="https://bandcamp.com/EmbeddedPlayer/album=3053449480/size=large/bgcol=ffffff/linkcol=bd6300/tracklist=true/artwork=small/transparent=true/" seamless></iframe></noscript>
       </div>
       <a class="btn" href="https://docwoodsband.bandcamp.com/album/silver-getaway">Listen on Bandcamp</a>
     </section>
@@ -443,10 +446,9 @@
     if (!f) return;
     var panel = f.parentNode;
     var W = 320;
-    // linkcol is set a little lighter than the site's rust so it lands on
-    // the rust color once multiplied into the tan panel.
+    // linkcol bd6300 comes out as warm gold after the color flip (see CSS).
     var base = 'https://bandcamp.com/EmbeddedPlayer/album=' + f.dataset.album +
-               '/size=large/bgcol=ffffff/linkcol=b96f2a/';
+               '/size=large/bgcol=ffffff/linkcol=bd6300/';
     var tracks = parseInt(f.dataset.tracks, 10) || 5;
     var mq = window.matchMedia('(max-width: 900px)');
     function update() {
