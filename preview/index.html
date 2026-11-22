@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doc Woods – Portland, OR</title>
+<!-- Preview page: kept out of search engines until it replaces the homepage. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Doc Woods – just some animals making noise. Portland, Oregon.">
+<meta name="theme-color" content="#f7eee0">
+<link rel="icon" type="image/png" href="img/favicon.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Dosis:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f7eee0;
+    --ink: #263333;
+    --rust: #9c561c;
+    --gold: #d88f32;
+    --tan: #d7c5aa;
+    --head: "Barlow Condensed", "Oswald", "Arial Narrow", sans-serif;
+    --body: "Dosis", "Nunito", system-ui, sans-serif;
+    /* 1 mockup pixel. The desktop layout scales down evenly below 1504px wide. */
+    --u: min(1px, calc(100vw / 1504));
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background-color: var(--paper);
+    background-image: radial-gradient(130% 100% at 50% 35%, #fbf4e9 0%, #f6ecdc 60%, #efe1cb 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* paper grain */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .24 .55 0 0 0 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: .55;
+  }
+  a { color: inherit; }
+  img { display: block; max-width: 100%; height: auto; }
+  .icon { display: block; width: 100%; height: 100%; }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1504px;
+    margin: 0 auto;
+    padding: calc(var(--u) * 24) calc(var(--u) * 57) calc(var(--u) * 34);
+  }
+
+  /* hand-drawn rules */
+  .rule-heavy { background: url(img/rule-heavy.svg) center / 100% 100% no-repeat; height: calc(var(--u) * 10); }
+  .rule-thin { background: url(img/rule-thin.svg) center / 100% 100% no-repeat; height: calc(var(--u) * 6); }
+
+  /* ---------- header ---------- */
+  .top {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+  .title { margin: 0; }
+  .title img { width: calc(var(--u) * 618); }
+  .top-right {
+    display: flex;
+    flex-direction: column;
+    padding-top: calc(var(--u) * 17);
+  }
+  .nav {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: calc(var(--u) * 33);
+    margin: 0;
+    padding: 0 calc(var(--u) * 15) 0 0;
+    list-style: none;
+  }
+  .social {
+    display: block;
+    width: calc(var(--u) * 46);
+    height: calc(var(--u) * 46);
+    color: var(--ink);
+    transition: transform .15s ease, color .15s ease;
+  }
+  .social:hover { color: var(--rust); transform: translateY(-2px); }
+  .contact {
+    margin-left: calc(var(--u) * 20);
+    font: 500 calc(var(--u) * 38) / 1 var(--head);
+    text-transform: uppercase;
+    letter-spacing: .01em;
+    text-decoration: none;
+  }
+  .contact:hover { color: var(--rust); }
+  .top-right .rule-heavy { margin: calc(var(--u) * 24) 0 0 calc(var(--u) * 36); height: calc(var(--u) * 9); }
+
+  /* ---------- three columns ---------- */
+  .main {
+    display: grid;
+    grid-template-columns: minmax(0, 485fr) minmax(0, 443fr) minmax(0, 438fr);
+    column-gap: calc(var(--u) * 12);
+    align-items: start;
+  }
+
+  .intro { display: flex; flex-direction: column; }
+  .city {
+    margin: calc(var(--u) * -2) 0 0;
+    font: 500 calc(var(--u) * 91) / .95 var(--head);
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: .005em;
+    white-space: nowrap;
+  }
+  .tagline {
+    margin: calc(var(--u) * 12) 0 0;
+    font: 500 calc(var(--u) * 34) / 1.2 var(--body);
+  }
+  .logo-pic {
+    display: block;
+    width: calc(var(--u) * 502);
+    margin: calc(var(--u) * 46) 0 0 calc(var(--u) * -12);
+  }
+  .logo { width: 100%; }
+
+  h2 {
+    margin: 0;
+    font: 500 calc(var(--u) * 61) / 1 var(--head);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: .005em;
+  }
+
+  /* listen box */
+  .listen {
+    position: relative;
+    margin-top: calc(var(--u) * 6);
+    padding: 0 calc(var(--u) * 24) calc(var(--u) * 24);
+  }
+  .listen-head {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--u) * 22);
+    margin-right: calc(var(--u) * -24);
+  }
+  .listen-head .rule-thin { flex: 1; margin-top: calc(var(--u) * -10); }
+  .frame { position: absolute; pointer-events: none; background: center / 100% 100% no-repeat; }
+  .frame-l { left: 0; top: calc(var(--u) * 30); bottom: calc(var(--u) * 2); width: calc(var(--u) * 6); background-image: url(img/rule-thin-v.svg); }
+  .frame-r { right: 0; top: calc(var(--u) * 24); bottom: calc(var(--u) * -8); width: calc(var(--u) * 6); background-image: url(img/rule-thin-v.svg); transform: scaleX(-1); }
+  .frame-b { left: calc(var(--u) * -3); right: calc(var(--u) * 4); bottom: 0; height: calc(var(--u) * 6); background-image: url(img/rule-thin.svg); transform: scaleX(-1); }
+
+  .player {
+    margin-top: calc(var(--u) * 28);
+    background: var(--tan);
+    border-radius: calc(var(--u) * 6);
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(38, 51, 51, .12), inset 0 0 0 1px rgba(38, 51, 51, .07);
+  }
+  .player iframe { display: block; width: 100%; height: 307px; border: 0; }
+
+  .btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(var(--u) * 56);
+    margin-top: calc(var(--u) * 22);
+    border-radius: calc(var(--u) * 5);
+    background: var(--gold);
+    color: var(--ink);
+    font: 600 calc(var(--u) * 41) / 1 var(--head);
+    text-transform: uppercase;
+    letter-spacing: .01em;
+    text-decoration: none;
+    overflow: hidden;
+    box-shadow: inset 0 -2px 0 rgba(120, 70, 10, .18);
+    transition: background-color .15s ease;
+  }
+  .btn::after { /* worn print texture */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .85 .7 0 0 0 -.38'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: .6;
+    pointer-events: none;
+  }
+  .btn:hover { background-color: #e39d40; }
+
+  /* shows */
+  .shows { padding-left: calc(var(--u) * 33); }
+  .shows-sub {
+    margin: calc(var(--u) * 10) 0 calc(var(--u) * 22);
+    font: 500 calc(var(--u) * 29) / 1.2 var(--body);
+    color: var(--rust);
+  }
+  .show-list { margin: 0; padding: 0; list-style: none; }
+  .show p {
+    margin: 0;
+    font: 500 calc(var(--u) * 42.5) / 1.12 var(--head);
+    text-transform: uppercase;
+    letter-spacing: .003em;
+  }
+  .show + .show { margin-top: calc(var(--u) * 30); }
+  .show:not([hidden]) ~ .show::before {
+    content: "";
+    display: block;
+    height: calc(var(--u) * 6);
+    margin-bottom: calc(var(--u) * 32);
+    background: url(img/rule-thin.svg) center / 100% 100% no-repeat;
+  }
+  .show-info { color: var(--rust); }
+  .show-city-m { display: none; }
+  .no-shows { font: 500 calc(var(--u) * 30) / 1.3 var(--body); margin: 0; }
+
+  /* ---------- footer ---------- */
+  .page > .rule-heavy { margin: calc(var(--u) * 22) calc(var(--u) * 14) 0; height: calc(var(--u) * 9); }
+  .foot {
+    padding-top: calc(var(--u) * 38);
+    text-align: center;
+    font: 500 calc(var(--u) * 27) / 1.2 var(--body);
+  }
+  .foot p { margin: 0; }
+  .foot .nav { display: none; }
+
+  :focus-visible { outline: 2px solid var(--rust); outline-offset: 4px; border-radius: 3px; }
+
+  /* ---------- phones & small tablets ---------- */
+  @media (max-width: 900px) {
+    .page { max-width: 540px; padding: 28px 22px 30px; }
+    .top { display: block; }
+    .title img { width: 84%; max-width: 440px; margin: 0 auto; }
+    .top-right { display: none; }
+
+    .main { display: block; text-align: center; }
+    .intro { align-items: center; }
+    .city { order: 1; margin-top: 6px; font-size: clamp(38px, 12.4vw, 62px); }
+    .logo-pic { order: 2; width: 60%; max-width: 310px; margin: 14px auto 0; }
+    .tagline { order: 3; margin-top: 16px; font-size: clamp(17px, 5.6vw, 25px); }
+
+    .listen { margin-top: 14px; padding: 0; }
+    .listen-head, .frame { display: none; }
+    .player { margin-top: 0; border-radius: 6px; }
+    .player iframe { height: 120px; }
+    .btn { height: 52px; margin-top: 14px; border-radius: 5px; font-size: clamp(25px, 8.2vw, 36px); }
+
+    .shows { padding: 0; }
+    .shows::before {
+      content: "";
+      display: block;
+      height: 9px;
+      margin: 24px 0 26px;
+      background: url(img/rule-heavy.svg) center / 100% 100% no-repeat;
+    }
+    h2 { font-size: clamp(32px, 10.6vw, 48px); white-space: normal; }
+    .shows-sub { display: none; }
+    .show-list { margin-top: 18px; }
+    .show p { font-size: clamp(19px, 7vw, 30px); line-height: 1.18; }
+    .show-where, .show-price { display: none; }
+    .show-city-m { display: inline; }
+    .show + .show { margin-top: 10px; }
+    .show:not([hidden]) ~ .show::before { display: none; }
+    .no-shows { font-size: 19px; }
+
+    .page > .rule-heavy { margin: 24px 0 0; height: 9px; }
+    .foot { padding-top: 18px; font-size: clamp(17px, 5.4vw, 23px); }
+    .foot-name { display: none; }
+    .foot .nav { display: flex; justify-content: center; gap: 14px; margin-top: 12px; padding: 0; }
+    .foot .social { width: 32px; height: 32px; }
+    .foot .contact { margin-left: 4px; font-size: 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .social, .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bandcamp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="currentColor"/><path fill="#f7eee0" transform="translate(5.04 5.04) scale(.58)" d="M0 18.75l7.437-13.5H24l-7.438 13.5H0z"/></symbol>
+  <symbol id="i-instagram" viewBox="0 0 24 24"><path fill="currentColor" d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></symbol>
+  <symbol id="i-facebook" viewBox="0 0 24 24"><path fill="currentColor" d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/></symbol>
+  <symbol id="i-youtube" viewBox="0 0 24 24"><path fill="currentColor" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></symbol>
+</svg>
+
+<div class="page">
+  <header class="top">
+    <h1 class="title">
+      <picture>
+        <source type="image/webp" srcset="img/doc-woods-title.webp">
+        <img src="img/doc-woods-title.png" width="1400" height="367" alt="Doc Woods">
+      </picture>
+    </h1>
+    <div class="top-right">
+      <ul class="nav" aria-label="Doc Woods online">
+        <li><a class="social" href="https://docwoods.bandcamp.com/" aria-label="Bandcamp"><svg class="icon" aria-hidden="true"><use href="#i-bandcamp"/></svg></a></li>
+        <!-- TODO: add the band's Instagram, Facebook and YouTube links (here and in the footer) -->
+        <li><a class="social" href="#" aria-label="Instagram"><svg class="icon" aria-hidden="true"><use href="#i-instagram"/></svg></a></li>
+        <li><a class="social" href="#" aria-label="Facebook"><svg class="icon" aria-hidden="true"><use href="#i-facebook"/></svg></a></li>
+        <li><a class="social" href="#" aria-label="YouTube"><svg class="icon" aria-hidden="true"><use href="#i-youtube"/></svg></a></li>
+        <li><a class="contact" href="https://docwoods.bandcamp.com/contact?b=3932484742&amp;n=Doc%20Woods">Contact</a></li>
+      </ul>
+      <div class="rule-heavy" aria-hidden="true"></div>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="intro" aria-label="About">
+      <p class="city">Portland, OR</p>
+      <p class="tagline">Just some animals making noise.</p>
+      <picture class="logo-pic">
+        <source type="image/webp" srcset="img/doc-woods-logo.webp">
+        <img class="logo" src="img/doc-woods-logo.png" width="1000" height="917" alt="Doc Woods band illustration: three skeleton animals playing two acoustic guitars and drums">
+      </picture>
+    </section>
+
+    <section class="listen" aria-labelledby="listen-h">
+      <div class="listen-head">
+        <h2 id="listen-h">Listen</h2>
+        <div class="rule-thin" aria-hidden="true"></div>
+      </div>
+      <span class="frame frame-l" aria-hidden="true"></span>
+      <span class="frame frame-r" aria-hidden="true"></span>
+      <span class="frame frame-b" aria-hidden="true"></span>
+
+      <div class="player">
+        <!--
+          Bandcamp player. To swap in a different album, change data-album to its
+          numeric album ID (Bandcamp > album page > Share/Embed) and data-tracks
+          to its number of tracks.
+        -->
+        <iframe id="bc-player" data-album="1031605262" data-tracks="5"
+                title="Bandcamp player" loading="lazy" seamless></iframe>
+        <noscript><iframe style="border:0;width:100%;height:307px" title="Bandcamp player"
+                src="https://bandcamp.com/EmbeddedPlayer/album=1031605262/size=large/bgcol=ffffff/linkcol=9c561c/artwork=small/tracklist=true/transparent=true/" seamless></iframe></noscript>
+      </div>
+      <a class="btn" href="https://docwoods.bandcamp.com/">Listen on Bandcamp</a>
+    </section>
+
+    <section class="shows" aria-labelledby="shows-h">
+      <h2 id="shows-h">Upcoming Shows</h2>
+      <p class="shows-sub" id="shows-count">2 dates coming up</p>
+      <!--
+        One <li> per show. data-date (YYYY-MM-DD) hides the show automatically
+        the day after it happens.
+      -->
+      <ul class="show-list">
+        <li class="show" data-date="2026-12-12">
+          <p class="show-title">December 12 — The Douglas Fir</p>
+          <p class="show-where">Portland, OR</p>
+          <p class="show-info"><span class="show-price">Free</span><span class="show-city-m">Portland</span> — 8:00 PM</p>
+        </li>
+        <li class="show" data-date="2027-01-16">
+          <p class="show-title">January 16 — Mississippi Studios</p>
+          <p class="show-where">Portland, OR</p>
+          <p class="show-info"><span class="show-price">Free</span><span class="show-city-m">Portland</span> — 8:00 PM</p>
+        </li>
+      </ul>
+      <p class="no-shows" hidden>No shows booked right now. Check back soon.</p>
+    </section>
+  </main>
+
+  <div class="rule-heavy" aria-hidden="true"></div>
+
+  <footer class="foot">
+    <p><span class="foot-name">Doc Woods © </span>Portland, Oregon</p>
+    <ul class="nav" aria-label="Doc Woods online">
+      <li><a class="social" href="https://docwoods.bandcamp.com/" aria-label="Bandcamp"><svg class="icon" aria-hidden="true"><use href="#i-bandcamp"/></svg></a></li>
+      <li><a class="social" href="#" aria-label="Instagram"><svg class="icon" aria-hidden="true"><use href="#i-instagram"/></svg></a></li>
+      <li><a class="social" href="#" aria-label="Facebook"><svg class="icon" aria-hidden="true"><use href="#i-facebook"/></svg></a></li>
+      <li><a class="social" href="#" aria-label="YouTube"><svg class="icon" aria-hidden="true"><use href="#i-youtube"/></svg></a></li>
+      <li><a class="contact" href="https://docwoods.bandcamp.com/contact?b=3932484742&amp;n=Doc%20Woods">Contact</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+  // Bandcamp player: full tracklist on desktop, compact on phones.
+  (function () {
+    var f = document.getElementById('bc-player');
+    if (!f) return;
+    var base = 'https://bandcamp.com/EmbeddedPlayer/album=' + f.dataset.album +
+               '/size=large/bgcol=ffffff/linkcol=9c561c/';
+    var tracks = Math.min(parseInt(f.dataset.tracks, 10) || 5, 8);
+    var mq = window.matchMedia('(max-width: 900px)');
+    function update() {
+      var src = base + (mq.matches ? 'tracklist=false' : 'tracklist=true') + '/artwork=small/transparent=true/';
+      f.style.height = mq.matches ? '120px' : (142 + 33 * tracks) + 'px';
+      if (f.getAttribute('src') !== src) f.setAttribute('src', src);
+    }
+    update();
+    if (mq.addEventListener) mq.addEventListener('change', update); else mq.addListener(update);
+  })();
+
+  // Shows: hide past dates and keep the count line current.
+  (function () {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var shows = [].slice.call(document.querySelectorAll('.show[data-date]'));
+    var n = 0;
+    shows.forEach(function (li) {
+      var p = li.dataset.date.split('-');
+      var day = new Date(+p[0], +p[1] - 1, +p[2]);
+      li.hidden = day < today;
+      if (!li.hidden) n++;
+    });
+    document.getElementById('shows-count').textContent =
+      n ? n + (n === 1 ? ' date' : ' dates') + ' coming up' : 'Nothing on the calendar';
+    document.querySelector('.no-shows').hidden = n > 0;
+  })();
+</script>
+</body>
+</html>
